@@ -1,7 +1,8 @@
 from time import sleep
 from notion_client import Client
 
-from bin.generic_modules.notion_comparator import *
+from bin.generic_modules.notion.notion_comparator import *
+from bin.generic_modules.tools import Tools
 
 class GenericNotionConnector:
 
@@ -74,6 +75,8 @@ class GenericNotionConnector:
         start_cursor = None
         page_size = 100
 
+        print("[INFO] - Fetching Notion pages ...")
+
         while True:
             if filter:
                 results = self.notion_client.databases.query(database_id=self.database_id, filter=filter, start_cursor=start_cursor, page_size=page_size)
@@ -89,3 +92,30 @@ class GenericNotionConnector:
                 break
 
         return all_pages
+
+
+    def get_pages_for_date(self, date_property_name: str, date: str):
+        filter = {
+            "and": [
+                {
+                    "property": date_property_name,
+                    "date": {
+                        str(NotionComperator.AFTER): Tools.add_days(date, -1)
+                    }
+                },
+                {
+                    "property": date_property_name,
+                    "date": {
+                        str(NotionComperator.BEFORE): Tools.add_days(date, 1)
+                    }
+                }
+            ]
+        }
+
+        return self.get_notion_pages(filter=filter)
+    
+
+    def get_property_values_for_date(self, date_property_name: str, date: str):
+
+        data = self.get_pages_for_date(date_property_name=date_property_name, date=date)
+        return [item['properties'] for item in data]
